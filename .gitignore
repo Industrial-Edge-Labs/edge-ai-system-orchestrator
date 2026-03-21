@@ -1,22 +1,32 @@
-﻿# General
+# General
 build/
+build*/
+build-*/
 Build/
+Debug/
+Release/
 out/
 bin/
 node_modules/
+.vs/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.venv/
 venv/
 .env
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
 
 # C++ / CMake
 CMakeCache.txt
 CMakeFiles/
-Makefile
 cmake_install.cmake
+compile_commands.json
+Makefile
 *.o
 *.obj
 *.exe
@@ -33,3 +43,4 @@ Cargo.lock
 
 # OS
 .DS_Store
+Thumbs.db

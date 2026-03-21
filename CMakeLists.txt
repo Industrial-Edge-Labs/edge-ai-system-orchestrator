@@ -1,17 +1,11 @@
-cmake_minimum_required(VERSION 3.14)
-project(EdgeAISystemOrchestrator VERSION 1.0.0 LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.18)
+project(EdgeAISystemOrchestrator VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler Optimizations for Deterministic Execution
-add_compile_options(-O3 -march=native -ffast-math -fno-finite-math-only)
-
-# Find Dependencies
-find_package(ZeroMQ REQUIRED)
-# In a real environment we would find CUDA, TensorRT, gRPC here
-find_package(CUDA REQUIRED)
+option(EDGE_ORCHESTRATOR_ENABLE_ZEROMQ "Enable ZeroMQ decision and control-plane integration." OFF)
 
 add_executable(edge_orchestrator
     src/main.cpp
@@ -19,4 +13,16 @@ add_executable(edge_orchestrator
 )
 
 target_include_directories(edge_orchestrator PRIVATE src)
-target_link_libraries(edge_orchestrator PRIVATE zmq ${CUDA_LIBRARIES})
+target_compile_options(edge_orchestrator PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/O2 /W4>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3 -Wall -Wextra>
+)
+target_compile_definitions(edge_orchestrator PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+    EDGE_ORCHESTRATOR_USE_ZMQ=$<BOOL:${EDGE_ORCHESTRATOR_ENABLE_ZEROMQ}>
+)
+
+if (EDGE_ORCHESTRATOR_ENABLE_ZEROMQ)
+    find_package(ZeroMQ REQUIRED)
+    target_link_libraries(edge_orchestrator PRIVATE zmq)
+endif()

@@ -1,44 +1,62 @@
-# Edge AI System Orchestrator ⚙️
+# Edge AI System Orchestrator
 
-The Monolithic Central Nervous System of the `Industrial-Edge-Labs` ecosystem. 
+This repository contains the deterministic control coordinator of the Industrial Edge Labs runtime. It consumes FSM state transitions from [Real-Time Vision Decision System](https://github.com/Industrial-Edge-Labs/real-time-vision-decision-system), accepts `ControlConfig` updates from [Vision Operations Control Plane](https://github.com/Industrial-Edge-Labs/vision-operations-control-plane), and maintains the actuation gate used by the physical and telemetry layers.
 
-Designed for **Hard Real-Time (HRT) Industrial Automation**, this C++20 engine orchestrates deterministic acyclic execution graphs across high-frequency domains: from asynchronous CUDA-based computer vision perception to strict sub-millisecond mechanical actuation (via `multi-physics-simulation-and-control-system`).
+## Role In The System
 
-## Architectural Paradigm: The Cyber-Physical Concurrency Model
-To achieve standard deviation jitter of less than $10 \mu s$, the orchestrator abandons generic POSIX thread-scheduling in favor of:
+- Consumes the canonical `FsmPayload` emitted by [Real-Time Vision Decision System](https://github.com/Industrial-Edge-Labs/real-time-vision-decision-system).
+- Accepts the canonical `ControlConfig` binary block emitted by [Vision Operations Control Plane](https://github.com/Industrial-Edge-Labs/vision-operations-control-plane).
+- Tracks deterministic scheduler state, emergency-stop latching, and the active control profile for downstream plant and observability integration.
 
-1. **Kernel-Bypass Networking**: utilizing memory-mapped packet I/O (`epoll` or DPDK) rather than the standard socket Linux stack.
-2. **NUMA-Aware Affinity**: Threads are pinned to specific CPU cores strictly aligned with the PCIe lane connected to the inference GPU (TensorRT nodes) or the NIC (ZeroMQ ingestion channels).
-3. **Lock-Free Bounded Queues**: Multi-producer/Multi-consumer concurrent patterns using `std::atomic` fences (Compare-And-Swap) replacing slow `pthread_mutex`.
+## Contracts
 
-## Core Loop Sequence ($T_{tick} = 1ms$)
+### Decision Input
 
-For a $1kHz$ operation loop, the orchestrator commits to a topological sort of system updates:
-```mermaid
-sequenceDiagram
-    participant Vision (NVMM)
-    participant Orchestrator (C++20)
-    participant Decision Runtime (FSM)
-    participant Plant (Multi-Physics)
-    participant Telemetry (eBPF)
+`FsmPayload`
 
-    loop 1000 Hz Tick
-        Note over Orchestrator (C++20): Wait on Spin-Lock Barrier
-        Vision (NVMM)->>Orchestrator (C++20): Zero-Copy Ingest (Object State Vector)
-        Orchestrator (C++20)->>Decision Runtime (FSM): Evaluate Formal Inference Graph
-        Decision Runtime (FSM)-->>Orchestrator (C++20): Produce Actuation Delta
-        Orchestrator (C++20)->>Plant (Multi-Physics): Transmit PID/State-Space Torques via UDP/ZMQ
-        Orchestrator (C++20)->>Telemetry (eBPF): Async Metrics Dispatch (Ring Buffer)
-    end
-```
+1. `timestamp`
+2. `current_state`
 
-## Compilation (Linux / Windows Native)
+### Control Input
+
+`ControlConfig`
+
+1. `max_velocity_rad`
+2. `min_vision_confidence`
+3. `tick_budget_us`
+4. `emergency_stop`
+5. `reserved[3]`
+6. `profile_revision`
+
+## Build Modes
+
+### Portable build
+
 ```bash
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --config Release
+cmake -S . -B build-default
+cmake --build build-default --config Release
 ```
 
-Ensure NVIDIA CUDA Toolkit $12.x$ and ZeroMQ are present.
+### ZeroMQ-enabled integration build
 
-*Note: Execution requires `sudo` (CAP_SYS_NICE capability) on Linux to elevate the thread priority to SCHED_FIFO.*
+```bash
+cmake -S . -B build -DEDGE_ORCHESTRATOR_ENABLE_ZEROMQ=ON
+cmake --build build --config Release
+```
+
+## Runtime
+
+```bash
+./build-default/Release/edge_orchestrator --dry-run --ticks 24 --target-hz 250
+```
+
+```bash
+./build/Release/edge_orchestrator --target-hz 1000 --decision-endpoint tcp://127.0.0.1:5556 --control-endpoint tcp://127.0.0.1:5557
+```
+
+## Notes
+
+- The default build stays portable and does not require ZeroMQ or CUDA.
+- The scheduler now validates incoming `FsmPayload` and `ControlConfig` blocks before applying them.
+- Emergency-stop state is now latched independently from decision input and control-plane overrides so a control-plane update cannot silently clear a decision-triggered halt.
+- The external documentation for this node lives in [docs-Industrial-Edge-Labs/edge-ai-system-orchestrator](https://github.com/Industrial-Edge-Labs/docs-Industrial-Edge-Labs/tree/main/edge-ai-system-orchestrator).
