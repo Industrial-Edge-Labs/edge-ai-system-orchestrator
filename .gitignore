@@ -1,41 +1,36 @@
-# Prerequisites
-*.d
+﻿# General
+build/
+Build/
+out/
+bin/
+node_modules/
 
-# Compiled Object files
-*.slo
-*.lo
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# C++ / CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.exe
+*.dll
 *.so
 *.dylib
-*.dll
 
-# Fortran module files
-*.mod
-*.smod
+# Rust
+target/
+Cargo.lock
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
+# Go
 *.out
-*.app
 
-# debug information files
-*.dwo
+# OS
+.DS_Store
+Thumbs.db

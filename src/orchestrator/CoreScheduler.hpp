@@ -35,6 +35,8 @@ struct ControlConfig {
 };
 #pragma pack(pop)
 
+static_assert(sizeof(ControlConfig) == 32, "ControlConfig must remain a 32-byte wire contract.");
+
 class CoreScheduler {
 public:
     CoreScheduler(size_t worker_threads = 4);
