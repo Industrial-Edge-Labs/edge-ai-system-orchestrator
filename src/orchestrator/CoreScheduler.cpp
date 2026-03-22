@@ -6,6 +6,8 @@
 #include <thread>
 #include <utility>
 
+#include "SyntheticInputs.hpp"
+
 #ifndef EDGE_ORCHESTRATOR_USE_ZMQ
 #define EDGE_ORCHESTRATOR_USE_ZMQ 1
 #endif
@@ -285,29 +287,13 @@ void CoreScheduler::apply_control_config(const ControlConfig& cfg, const char* s
 }
 
 void CoreScheduler::inject_synthetic_inputs(uint64_t tick) {
-    if (tick == 1) {
-        ControlConfig cfg{};
-        cfg.max_velocity_rad = 120.0;
-        cfg.min_vision_confidence = 0.88;
-        cfg.tick_budget_us = 1000;
-        cfg.emergency_stop = 0;
-        cfg.profile_revision = 1;
-        apply_control_config(cfg, "dry-run");
+    if (const auto cfg = synthetic_control_config_for_tick(tick); cfg.has_value()) {
+        apply_control_config(*cfg, "dry-run");
         return;
     }
 
-    if (tick == 4) {
-        apply_fsm_payload(FsmPayload{now_ns(), GlobalState::PERIMETER_BREACH}, "dry-run");
-        return;
-    }
-
-    if (tick == 8) {
-        apply_fsm_payload(FsmPayload{now_ns(), GlobalState::AUTHORIZATION_PENDING}, "dry-run");
-        return;
-    }
-
-    if (tick == 16) {
-        apply_fsm_payload(FsmPayload{now_ns(), GlobalState::EMERGENCY_HALT}, "dry-run");
+    if (const auto payload = synthetic_fsm_payload_for_tick(tick, now_ns()); payload.has_value()) {
+        apply_fsm_payload(*payload, "dry-run");
     }
 }
 

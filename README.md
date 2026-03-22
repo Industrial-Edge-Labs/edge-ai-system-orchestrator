@@ -44,6 +44,14 @@ cmake -S . -B build -DEDGE_ORCHESTRATOR_ENABLE_ZEROMQ=ON
 cmake --build build --config Release
 ```
 
+### Local tests
+
+```bash
+cmake -S . -B build -DEDGE_ORCHESTRATOR_ENABLE_TESTS=ON
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
 ## Runtime
 
 ```bash
@@ -59,4 +67,5 @@ cmake --build build --config Release
 - The default build stays portable and does not require ZeroMQ or CUDA.
 - The scheduler now validates incoming `FsmPayload` and `ControlConfig` blocks before applying them.
 - Emergency-stop state is now latched independently from decision input and control-plane overrides so a control-plane update cannot silently clear a decision-triggered halt.
+- Runtime parsing and synthetic-input generation are now split into dedicated modules so the repo has testable internals beyond the live scheduler loop.
 - The external documentation for this node lives in [docs-Industrial-Edge-Labs/edge-ai-system-orchestrator](https://github.com/Industrial-Edge-Labs/docs-Industrial-Edge-Labs/tree/main/edge-ai-system-orchestrator).
